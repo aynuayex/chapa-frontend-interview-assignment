@@ -28,21 +28,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NumericFormat } from "react-number-format";
 import { toast } from "sonner";
+import { useMediaQuery } from "@uidotdev/usehooks";
 
 const COLORS = ["#00C49F", "#FFBB28", "#FF8042", "#FF6384", "#36A2EB"];
 
 export default function SuperAdminDashboard() {
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [isMobile, setIsMobile] = useState(false);
   const [filteredUsers, setFilteredUsers] = useState<string[]>([]);
   const [newAdmin, setNewAdmin] = useState({ name: "", email: "" });
 
   useEffect(() => {
     setUsers(mockUsers);
     setTransactions(mockTransactions);
-    setIsMobile(window.innerWidth < 768);
   }, []);
 
   const toggleUserActive = (id: string) => {
@@ -93,15 +93,15 @@ export default function SuperAdminDashboard() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 min-h-screen">
       <h1 className="text-2xl font-bold">Super Admin Dashboard</h1>
 
       <Card>
         <CardHeader>
           <CardTitle>System Summary</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
+        <CardContent className="w-full grid grid-cols-1 md:grid-cols-3 gap-x-20 gap-y-2">
+          <div className="flex flex-col items-center space-y-2">
             <p className="text-gray-500 text-sm">Total Payments</p>
             <p className="text-2xl text-red-600 font-semibold">
               <NumericFormat
@@ -112,17 +112,19 @@ export default function SuperAdminDashboard() {
               />
             </p>
           </div>
-          <div>
-            <p className="text-gray-500 text-sm">Active Users</p>
-            <p className="text-2xl text-green-600 font-semibold">
-              {activeUsersCount}
-            </p>
-          </div>
-          <div>
-            <p className="text-gray-500 text-sm">Total Users</p>
-            <p className="text-2xl text-blue-600 font-semibold">
-              {totalUsersCount}
-            </p>
+          <div className="w-full flex justify-between items-center space-y-2 md:space-y-0">
+            <div>
+              <p className="text-gray-500 text-sm">Active Users</p>
+              <p className="text-2xl text-green-600 font-semibold">
+                {activeUsersCount}
+              </p>
+            </div>
+            <div>
+              <p className="text-gray-500 text-sm">Total Users</p>
+              <p className="text-2xl text-blue-600 font-semibold">
+                {totalUsersCount}
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -131,35 +133,39 @@ export default function SuperAdminDashboard() {
         <CardHeader>
           <CardTitle>User Spending Charts</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:h-64 h-[480px] -mt-2">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              layout={isMobile ? "vertical" : "horizontal"}
-              data={sortedTopUsers.map(({ name, total }) => ({
-                name,
-                value: filteredUsers.includes(name) ? 0 : total,
-              }))}
-              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-            >
-              {isMobile ? (
-                <>
-                  <XAxis type="number" />
-                  <YAxis dataKey="name" type="category" />
-                </>
-              ) : (
-                <>
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                </>
-              )}
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="value" fill="#8884d8" />
-            </BarChart>
-          </ResponsiveContainer>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full !h-full -mt-2">
+          <div className={isMobile ? "min-h-[500px] w-full" : "w-full h-full"}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                layout={isMobile ? "vertical" : "horizontal"}
+                data={sortedTopUsers.map(({ name, total }) => ({
+                  name,
+                  value: filteredUsers.includes(name) ? 0 : total,
+                }))}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                {isMobile ? (
+                  <>
+                    <XAxis type="number" />
+                    <YAxis dataKey="name" type="category" />
+                  </>
+                ) : (
+                  <>
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                  </>
+                )}
+                <Tooltip />
+                <Bar dataKey="value" fill="#8884d8" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
 
-          <div className="flex flex-col md:flex-row gap-4 w-full h-full">
-            <ResponsiveContainer width="70%" height={isMobile ? 300 : 250}>
+          <div className="flex flex-col md:flex-row justify-center gap-4 w-full h-full">
+            <ResponsiveContainer
+              width={isMobile ? "100%" : "50%"}
+              height={isMobile ? 300 : 250}
+            >
               <PieChart>
                 <Pie
                   data={sortedTopUsers.map((d) => ({
@@ -184,18 +190,18 @@ export default function SuperAdminDashboard() {
               </PieChart>
             </ResponsiveContainer>
 
-            <ul className="text-sm space-y-1 overflow-auto max-h-[250px]">
+            <ul className=" flex flex-col justify-center text-sm space-y-1 overflow-auto max-h-[250px]">
               {sortedTopUsers.map(({ name, total }) => (
                 <li
                   key={name}
                   onClick={() => toggleUser(name)}
-                  className={`cursor-pointer ${
+                  className={`flex justify-around cursor-pointer ${
                     filteredUsers.includes(name)
                       ? "line-through text-gray-400"
                       : ""
                   }`}
                 >
-                  {name}:{" "}
+                  <p>{name}</p>
                   <NumericFormat
                     value={total}
                     displayType="text"

@@ -32,12 +32,15 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { useMediaQuery } from "@uidotdev/usehooks";
+
 import { NumericFormat } from "react-number-format";
 
 const COLORS = ["#00C49F", "#FFBB28", "#FF8042", "#FF6384", "#36A2EB"];
 
 export default function UserDashboard() {
-const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [wallet, setWallet] = useState<number | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [form, setForm] = useState({
@@ -46,12 +49,10 @@ const [isDialogOpen, setIsDialogOpen] = useState(false);
     category: "Other",
   });
   const [filteredCategories, setFilteredCategories] = useState<string[]>([]);
-  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     fetchUserWalletBalance().then(setWallet);
     fetchUserTransactions().then(setTransactions);
-    setIsMobile(window.innerWidth < 768);
   }, []);
 
   const handleChange = (e: any) => {
@@ -63,7 +64,7 @@ const [isDialogOpen, setIsDialogOpen] = useState(false);
     toast.loading("Processing transaction...");
     const result = await submitTransaction(form);
     if (result) {
-    //   setTransactions(result);
+      //   setTransactions(result);
       toast.success("Transaction submitted successfully!");
       setForm({ amount: "", description: "", category: "Other" });
       setIsDialogOpen(false);
@@ -75,7 +76,8 @@ const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const spendingByCategory = spendingTransactions.reduce((acc, txn) => {
     const isFiltered = filteredCategories.includes(txn.category);
-    acc[txn.category] = (acc[txn.category] || 0) + (!isFiltered ? txn.amount : 0);
+    acc[txn.category] =
+      (acc[txn.category] || 0) + (!isFiltered ? txn.amount : 0);
     return acc;
   }, {} as Record<string, number>);
 
@@ -85,19 +87,21 @@ const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const toggleCategory = (category: string) => {
     setFilteredCategories((prev) =>
-      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]
+      prev.includes(category)
+        ? prev.filter((c) => c !== category)
+        : [...prev, category]
     );
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 ">
       <h1 className="text-2xl font-bold">User Dashboard</h1>
 
       <Card>
         <CardHeader>
           <CardTitle>Wallet & Spending Summary</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4 !h-full">
           <div>
             <p className="text-gray-500 text-sm">Wallet Balance</p>
             <p className="text-2xl text-green-600 font-semibold">
@@ -124,28 +128,32 @@ const [isDialogOpen, setIsDialogOpen] = useState(false);
               />
             </p>
           </div>
-          <div>
-            <p className="text-gray-500 text-sm">By Category</p>
-            <ul className="flex gap-x-3 text-sm">
-              {Object.entries(spendingByCategory).map(([category, value]) => (
-                <li
-                  key={category}
-                  onClick={() => toggleCategory(category)}
-                  className={`cursor-pointer ${
-                    filteredCategories.includes(category) ? "line-through text-gray-400" : ""
-                  }`}
-                >
-                  {category}:{" "}
-                  <NumericFormat
-                    value={value}
-                    displayType="text"
-                    thousandSeparator
-                    suffix=" ETB"
-                  />
-                </li>
-              ))}
-            </ul>
-          </div>
+          {!isMobile && (
+            <div>
+              <p className="text-gray-500 text-sm">By Category</p>
+              <ul className="flex gap-x-3 text-sm">
+                {Object.entries(spendingByCategory).map(([category, value]) => (
+                  <li
+                    key={category}
+                    onClick={() => toggleCategory(category)}
+                    className={`cursor-pointer ${
+                      filteredCategories.includes(category)
+                        ? "line-through text-gray-400"
+                        : ""
+                    }`}
+                  >
+                    {category}:{" "}
+                    <NumericFormat
+                      value={value}
+                      displayType="text"
+                      thousandSeparator
+                      suffix=" ETB"
+                    />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -154,50 +162,85 @@ const [isDialogOpen, setIsDialogOpen] = useState(false);
         <CardHeader>
           <CardTitle>Spending Charts</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:h-64 h-[580px] -mt-2">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              layout={isMobile ? "vertical" : "horizontal"}
-              data={chartData}
-              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-            >
-              {isMobile ? (
-                <>
-                  <XAxis type="number" />
-                  <YAxis dataKey="name" type="category" />
-                </>
-              ) : (
-                <>
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                </>
-              )}
-              <Tooltip />
-              {/* <Legend /> */}
-              <Bar dataKey="value" fill="#8884d8" />
-            </BarChart>
-          </ResponsiveContainer>
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full !h-full -mt-2">
+          <div className={isMobile ? "min-h-[500px] w-full" : "w-full h-full"}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                layout={isMobile ? "vertical" : "horizontal"}
                 data={chartData}
-                cx="50%"
-                cy="50%"
-                outerRadius={isMobile ? 70 : 100}
-                innerRadius={isMobile ? 40 : 60}
-                dataKey="value"
-                label
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
               >
-                {chartData.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={COLORS[index % COLORS.length]}
-                  />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+                {isMobile ? (
+                  <>
+                    <XAxis type="number" />
+                    <YAxis dataKey="name" type="category" />
+                  </>
+                ) : (
+                  <>
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                  </>
+                )}
+                <Tooltip />
+                <Bar dataKey="value" fill="#8884d8" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className={"w-full h-full"}>
+            <ResponsiveContainer
+              width={isMobile ? "100%" : "70%"}
+              height={isMobile ? 300 : 250}
+            >
+              <PieChart>
+                <Pie
+                  data={chartData}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={isMobile ? 70 : 100}
+                  innerRadius={isMobile ? 40 : 60}
+                  dataKey="value"
+                  label
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+            {isMobile && (
+              <div className="max-h-[250px]  ">
+                <p className="text-gray-600 text-sm font-semibold text-center">By Category</p>
+                <ul className="text-sm  space-y-1 overflow-auto max-h-[250px]">
+                  {Object.entries(spendingByCategory).map(
+                    ([category, value]) => (
+                      <li
+                        key={category}
+                        onClick={() => toggleCategory(category)}
+                        className={`flex justify-around cursor-pointer ${
+                          filteredCategories.includes(category)
+                            ? "line-through text-gray-400"
+                            : ""
+                        }`}
+                      >
+                        {category}:{" "}
+                        <NumericFormat
+                          value={value}
+                          displayType="text"
+                          thousandSeparator
+                          suffix=" ETB"
+                        />
+                      </li>
+                    )
+                  )}
+                </ul>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -205,7 +248,7 @@ const [isDialogOpen, setIsDialogOpen] = useState(false);
       <Card>
         <CardHeader className="flex justify-between items-center">
           <CardTitle>Recent Transactions</CardTitle>
-          <Dialog  open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button>Add Transaction</Button>
             </DialogTrigger>
